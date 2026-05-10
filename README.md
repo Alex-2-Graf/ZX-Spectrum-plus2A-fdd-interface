@@ -61,72 +61,43 @@ Hardware interface to connect standard 3.5" floppy disk drives (or Gotek emulato
 
 # Доработка некоторых моделей Floppy
 
-\## 🔧 PC 3.5" Floppy Drive Modification (Shugart / READY Mod)
+  ## 🔧 Модификация дисководов 3.5" (Адаптация под стандарт Shugart / READY)
 
-Standard PC 3.5-inch floppy drives (Sony, Samsung, Mitsumi, Panasonic) are hardwired to standard PC specifications.  
-To make them work with the μPD765 controller, you must perform two hardware modifications on the drive's PCB:
+Стандартные дисководы от обычных ПК (Sony, Samsung, Mitsumi, Panasonic) настроены под требования IBM PC [1]. Для корректной работы с контроллером μPD765 на ZX Spectrum требуются два условия:
+1. **Выбор дисковода как Drive A:** (система ожидает устройство на логическом адресе DS0, тогда как в ПК все приводы жестко настроены на DS1) [1].
+2. **Сигнал READY на 34-м контакте:** (дисководы ПК выдают на этот контакт сигнал смены диска `Disk Change`, а Спектруму нужен сигнал готовности `READY`) [1].
 
-1\. \*\*Change Drive ID from DS1 to DS0\*\* (Spectrum expects Drive A: to be DS0).
+---
 
-2\. \*\*Route the READY signal to Pin 34\*\* (PC drives put `Disk Change` on Pin 34).
+### 🔥 Важно: если у вас DIP-версия платы интерфейса
+ВБлагодаря встроенным на плату перемычкам, вам **не нужно** резать дорожки и паять провода внутри дисковода для получения сигнала READY или смены адреса A/B [1]. Просто настройте соответствующие джамперы на плате интерфейса под ваш ПК-дисковод.
 
-Below are instructions for the most common drive models found today.
+---
 
+### 🛠️ Инструкция для SOP-версии (модификация самого дисковода)
 
+Если вы используете компактную SOP-версию платы, модификацию нужно провести на плате самого 3.5" дисковода [1]. Ниже приведены инструкции для самых популярных моделей:
 
-\---
+#### 1. Sony MPF920 (Самый распространенный)
+* **Смена адреса (DS0):** Найдите на плате дисковода контактные площадки `JC30` / `JC31` (или `DS0` / `DS1`) рядом с интерфейсным разъемом [1]. Аккуратно перепаяйте SMD-резистор (или каплю припоя) с позиции `DS1` на позицию `DS0` [1].
+* **Сигнал READY:** 
+  1. Найдите дорожку, идущую к **34-му контакту** разъема шлейфа [1]. Аккуратно перережьте её скальпелем, чтобы отключить штатный сигнал `Disk Change` [1].
+  2. Найдите **5-й вывод** главной микросхемы контроллера дисковода (или точку с маркировкой `RDY`) [1].
+  3. Припаяйте тонкий монтажный провод от точки `RDY` напрямую к **34-му контакту** разъема шлейфа [1].
 
+#### 2. Samsung SFD-321B
+* **Смена адреса (DS0):** Найдите контактные площадки с маркировкой `DC0` / `DC1` (или `S0` / `S1`). Переставьте каплю припоя/резистор из положения `1` в положение `0` [1].
+* **Сигнал READY:** На плате рядом с 34-контактным разъемом есть готовые площадки, подписанные как `DC` (Disk Change) и `RDY` (Ready) [1]. По умолчанию они замкнуты в режиме ПК. Просто уберите припой с перемычки `DC` и замкните им площадки `RDY` [1]. Резать дорожки на этой модели не требуется.
 
+---
 
-\### 📸 Sony MPF920 (Most Common)
-
-1\. \*\*Drive ID (DS0)\*\*: Locate the jumper pads labeled `JC30` / `JC31` (or `DS0` / `DS1`) near the data connector. Remove the zero-ohm resistor (or solder bridge) from `DS1` and solder it across the `DS0` pads.
-
-2\. \*\*READY Signal\*\*: 
-
-&#x20;  \* Locate the trace going to \*\*Pin 34\*\* of the IDC connector. Cut this trace to disconnect the `Disk Change` signal.
-
-&#x20;  \* Locate \*\*Pin 5\*\* of the main drive controller chip (or find a pad labeled `RDY`).
-
-&#x20;  \* Solder a thin kynar wire from the `RDY` pad directly to \*\*Pin 34\*\* of the interface connector.
-
-
-
-\---
-
-
-
-\### 📸 Samsung SFD-321B
-
-1\. \*\*Drive ID (DS0)\*\*: Locate the solder pads labeled `DC0` / `DC1` (or `S0` / `S1`). Move the SMD resistor/bridge from position `1` to position `0`.
-
-2\. \*\*READY Signal\*\*:
-
-&#x20;  \* Near the 34-pin connector, look for configuration pads labeled `DC` (Disk Change) and `RDY` (Ready).
-
-&#x20;  \* By default, a bridge connects the main line to `DC`. Desolder this bridge and move it to the `RDY` position. (No wire cutting required on most revisions!).
-
-
-
-\---
-
-
-
-\### ⚙️ Alternative: Gotek Floppy Emulator Configuration
-
-If you are using a \*\*Gotek\*\* drive instead of a real mechanical drive, no soldering is required. Flash the drive with \[FlashFloppy firmware](https://github.com) and update your `FF.CFG` configuration file on the USB drive with the following lines:
+### ⚙️ Альтернатива: Настройка эмулятора Gotek
+Если вместо механического дисковода вы подключаете популярный эмулятор **Gotek**, паять ничего не придется вообще [1]. Прошейте его альтернативной прошивкой [FlashFloppy](https://github.com) и добавьте в файл конфигурации `FF.CFG` на вашей USB-флешке следующие строки:
 
 ```ini
-
 interface = shugart
-
 host = dec-shugart
-
 pin34 = rdy
-
 ```
-
-\*\*\*
-
 
 
